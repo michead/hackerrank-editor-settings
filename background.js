@@ -1,9 +1,38 @@
+function setPrefPaneOpacity(tabId, opacity, cb) {
+  let script;
+  const attribName = "opacity";
+  if (opacity < 1) {
+    const attribNameAndVal = `${attribName}:${opacity}`;
+    script =`
+    var elem = document.getElementById("pref-pane");
+    var style = elem.getAttribute("style");
+    if (style.indexOf("${attribName}") === -1) {
+      elem.setAttribute("style", style.concat("${attribNameAndVal}"));
+    }`;
+  } else {
+    script = `
+    var elem = document.getElementById("pref-pane");
+    var style = elem.getAttribute("style");
+    if (style.indexOf("${attribName}") !== -1) {
+      elem.setAttribute("style", style.substr(0, style.indexOf("${attribName}")));
+    }`;
+  }
+  chrome.tabs.executeScript(tabId, {
+    code: script
+  }, cb);
+}
+
 function toggleEditorSettings(tabId, show, cb) {
-  const neg = show ? '!' : '';
-  const script =
-  `if (document.getElementById("pref-pane").getAttribute("style").indexOf("display: none") ${neg}== -1) {
-    document.getElementById('show-preferences').click();
-  }`
+  let script;
+  if (show) {
+    script = `if (document.getElementById("pref-pane").getAttribute("style").indexOf("display: none") !== -1) {
+      document.getElementById('show-preferences').click();
+    }`;
+  } else {
+    script = `if (document.getElementById("pref-pane").getAttribute("style").indexOf("display: none") === -1) {
+      document.getElementById('show-preferences').click();
+    }`;
+  }
   chrome.tabs.executeScript(tabId, {
     code: script
   }, cb);
@@ -61,18 +90,22 @@ function clickIntellisense(tabId, items, cb) {
 chrome.tabs.onActivated.addListener((_tab) => {
   chrome.tabs.get(_tab.tabId, (tab) => {
     if (/^https?:\/\/www\.hackerrank\.com\//.test(tab.url)) {
-      toggleEditorSettings(_tab.tabId, true, () => {
-        chrome.storage.sync.get([
-          'hackerRankEditorSettings_editorMode',
-          'hackerRankEditorSettings_editorTheme',
-          'hackerRankEditorSettings_tabSpaces',
-          'hackerRankEditorSettings_intellisense'
-        ], function(items) {
-          clickEditorMode(_tab.tabId, items, () => {
-            clickEditorSettings(_tab.tabId, items, () => {
-              clickTabSpaces(_tab.tabId, items, () => {
-                clickIntellisense(_tab.tabId, items, () => {
-                  toggleEditorSettings(_tab.tabId, false, () => {})
+      setPrefPaneOpacity(_tab.tabId, 0.001, () => {
+        toggleEditorSettings(_tab.tabId, true, () => {
+          chrome.storage.sync.get([
+            'hackerRankEditorSettings_editorMode',
+            'hackerRankEditorSettings_editorTheme',
+            'hackerRankEditorSettings_tabSpaces',
+            'hackerRankEditorSettings_intellisense'
+          ], function(items) {
+            clickEditorMode(_tab.tabId, items, () => {
+              clickEditorTheme(_tab.tabId, items, () => {
+                clickTabSpaces(_tab.tabId, items, () => {
+                  clickIntellisense(_tab.tabId, items, () => {
+                    toggleEditorSettings(_tab.tabId, false, () => {
+                      setPrefPaneOpacity(_tab.tabId, 1, () => {});
+                    })
+                  });
                 });
               });
             });
