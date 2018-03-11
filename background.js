@@ -87,23 +87,23 @@ function clickIntellisense(tabId, items, cb) {
   clickSetting(tabId, items, 'intellisense', cb);
 }
 
-chrome.tabs.onActivated.addListener((_tab) => {
-  chrome.tabs.get(_tab.tabId, (tab) => {
+function tabChangeListener(tabId) {
+  chrome.tabs.get(tabId, (tab) => {
     if (/^https?:\/\/www\.hackerrank\.com\//.test(tab.url)) {
-      setPrefPaneOpacity(_tab.tabId, 0.001, () => {
-        toggleEditorSettings(_tab.tabId, true, () => {
+      setPrefPaneOpacity(tabId, 0.001, () => {
+        toggleEditorSettings(tabId, true, () => {
           chrome.storage.sync.get([
             'hackerRankEditorSettings_editorMode',
             'hackerRankEditorSettings_editorTheme',
             'hackerRankEditorSettings_tabSpaces',
             'hackerRankEditorSettings_intellisense'
           ], function(items) {
-            clickEditorMode(_tab.tabId, items, () => {
-              clickEditorTheme(_tab.tabId, items, () => {
-                clickTabSpaces(_tab.tabId, items, () => {
-                  clickIntellisense(_tab.tabId, items, () => {
-                    toggleEditorSettings(_tab.tabId, false, () => {
-                      setPrefPaneOpacity(_tab.tabId, 1, () => {});
+            clickEditorMode(tabId, items, () => {
+              clickEditorTheme(tabId, items, () => {
+                clickTabSpaces(tabId, items, () => {
+                  clickIntellisense(tabId, items, () => {
+                    toggleEditorSettings(tabId, false, () => {
+                      setPrefPaneOpacity(tabId, 1, () => {});
                     })
                   });
                 });
@@ -114,4 +114,7 @@ chrome.tabs.onActivated.addListener((_tab) => {
       });
     }
   });
-});
+}
+
+chrome.tabs.onActivated.addListener((tab) => tabChangeListener(tab.tabId));
+chrome.tabs.onUpdated.addListener((tabId) => tabChangeListener(tabId));
